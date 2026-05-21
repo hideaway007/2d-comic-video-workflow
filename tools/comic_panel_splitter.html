@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>漫画自动分格</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23111111'/%3E%3Cpath d='M3 3h4v4H3zM9 3h4v4H9zM3 9h10v4H3z' fill='none' stroke='%23d6423c' stroke-width='1.2'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      --bg: #111111;
+      --panel: #191919;
+      --panel-2: #202020;
+      --line: #393939;
+      --line-strong: #5a5a5a;
+      --text: #eeeeee;
+      --muted: #a7a7a7;
+      --soft: #767676;
+      --accent: #d6423c;
+      --accent-2: #ff6b62;
+      --good: #76c893;
+      --shadow: 0 18px 60px rgba(0, 0, 0, 0.32);
+      color-scheme: dark;
+      font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px;
+      color: var(--text);
+    }
+
+    button, input, select { font: inherit; }
+
+    .app {
+      display: grid;
+      grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      border-right: 1px solid var(--line);
+      background: rgba(17, 17, 17, 0.92);
+      padding: 24px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+
+    .mark {
+      width: 34px;
+      height: 34px;
+      border: 1px solid var(--line-strong);
+      display: grid;
+      place-items: center;
+      color: var(--accent-2);
+      font-weight: 700;
+    }
+
+    h1 {
+      font-size: 20px;
+      line-height: 1.2;
+      margin: 0;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .dropzone {
+      border: 1px dashed var(--line-strong);
+      background: var(--panel);
+      padding: 18px;
+      min-height: 136px;
+      display: grid;
+      align-content: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: border-color 160ms ease, background 160ms ease;
+    }
+
+    .dropzone:hover,
+    .dropzone.dragover {
+      border-color: var(--accent-2);
+      background: #221918;
+    }
+
+    .dropzone strong {
+      font-size: 15px;
+      font-weight: 650;
+    }
+
+    .dropzone span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .file-input { display: none; }
+
+    .controls {
+      margin-top: 18px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .field {
+      display: grid;
+      gap: 7px;
+    }
+
+    .field label {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .field output {
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+
+    select,
+    input[type="number"],
+    input[type="range"] {
+      width: 100%;
+    }
+
+    select,
+    input[type="number"] {
+      height: 38px;
+      color: var(--text);
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 0 10px;
+      outline: none;
+    }
+
+    select:focus,
+    input[type="number"]:focus {
+      border-color: var(--accent-2);
+    }
+
+    input[type="range"] { accent-color: var(--accent); }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .button {
+      min-height: 42px;
+      border: 1px solid var(--line-strong);
+      border-radius: 6px;
+      background: var(--panel-2);
+      color: var(--text);
+      cursor: pointer;
+      transition: transform 140ms ease, border-color 140ms ease, background 140ms ease;
+    }
+
+    .button:hover:not(:disabled) {
+      transform: translateY(-1px);
+      border-color: var(--accent-2);
+    }
+
+    .button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .button:disabled {
+      cursor: not-allowed;
+      color: var(--soft);
+      border-color: var(--line);
+      background: #171717;
+    }
+
+    .status {
+      margin-top: 16px;
+      min-height: 42px;
+      padding: 11px 12px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+      border-radius: 6px;
+    }
+
+    .workspace {
+      padding: 24px;
+      display: grid;
+      grid-template-rows: minmax(260px, 58vh) auto;
+      gap: 18px;
+      min-width: 0;
+    }
+
+    .preview-shell,
+    .results {
+      border: 1px solid var(--line);
+      background: rgba(25, 25, 25, 0.88);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      min-width: 0;
+    }
+
+    .preview-shell {
+      position: relative;
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+    }
+
+    .empty {
+      max-width: 420px;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.7;
+      padding: 28px;
+    }
+
+    .preview-stage {
+      display: none;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      padding: 18px;
+    }
+
+    .image-wrap {
+      position: relative;
+      width: fit-content;
+      max-width: 100%;
+      margin: 0 auto;
+    }
+
+    #sourceImage {
+      display: block;
+      max-width: min(100%, 1280px);
+      max-height: calc(58vh - 36px);
+      width: auto;
+      height: auto;
+      object-fit: contain;
+    }
+
+    #overlayCanvas {
+      position: absolute;
+      left: 0;
+      top: 0;
+      pointer-events: none;
+    }
+
+    .results { padding: 18px; }
+
+    .results-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 14px;
+    }
+
+    .results h2 {
+      font-size: 15px;
+      margin: 0;
+      letter-spacing: 0;
+    }
+
+    .download-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .manifest-link {
+      color: var(--good);
+      text-decoration: none;
+      font-size: 13px;
+      border: 1px solid rgba(118, 200, 147, 0.36);
+      border-radius: 6px;
+      padding: 7px 10px;
+    }
+
+    .manifest-link[aria-disabled="true"] {
+      color: var(--soft);
+      pointer-events: none;
+      border-color: var(--line);
+    }
+
+    .panel-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 12px;
+    }
+
+    .panel-card {
+      background: #101010;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    .panel-card img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      object-fit: contain;
+      background: #050505;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .panel-meta {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+      padding: 9px 10px;
+      color: var(--muted);
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .panel-meta a {
+      color: var(--text);
+      text-decoration: none;
+      border: 1px solid var(--line-strong);
+      border-radius: 5px;
+      padding: 5px 8px;
+    }
+
+    @media (max-width: 900px) {
+      .app { grid-template-columns: 1fr; }
+
+      .sidebar {
+        position: static;
+        height: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .workspace {
+        grid-template-rows: minmax(220px, 52vh) auto;
+        padding: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="mark">格</div>
+        <div>
+          <h1>漫画自动分格</h1>
+          <p class="subtitle">本地浏览器处理图片，按 gutter / 背景线切出漫画格。</p>
+        </div>
+      </div>
+
+      <label class="dropzone" id="dropzone" for="imageInput">
+        <strong>选择或拖入漫画页</strong>
+        <span>支持 PNG / JPG。图片不会上传，所有检测都在当前浏览器里完成。</span>
+      </label>
+      <input class="file-input" id="imageInput" type="file" accept="image/png,image/jpeg,image/webp">
+
+      <section class="controls" aria-label="分格参数">
+        <div class="field">
+          <label for="backgroundMode">背景 / gutter <output id="backgroundModeValue">auto</output></label>
+          <select id="backgroundMode">
+            <option value="auto" selected>auto</option>
+            <option value="dark">dark</option>
+            <option value="light">light</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="separatorRatio">分隔线阈值 <output id="separatorRatioValue">0.9</output></label>
+          <input id="separatorRatio" type="range" min="0.65" max="0.95" value="0.9" step="0.01">
+        </div>
+
+        <div class="field">
+          <label for="backgroundTolerance">背景容差 <output id="backgroundToleranceValue">8</output></label>
+          <input id="backgroundTolerance" type="range" min="8" max="90" value="8" step="1">
+        </div>
+
+        <div class="field">
+          <label for="minPanelArea">最小面积 <output id="minPanelAreaValue">5000</output></label>
+          <input id="minPanelArea" type="number" min="200" max="200000" value="5000" step="100">
+        </div>
+
+        <div class="field">
+          <label for="padding">裁切外扩 <output id="paddingValue">0</output></label>
+          <input id="padding" type="range" min="0" max="32" value="0" step="1">
+        </div>
+
+        <div class="field">
+          <label for="filterTextStrips">文本条过滤 <output id="filterTextStripsValue">on</output></label>
+          <input id="filterTextStrips" type="checkbox" checked>
+        </div>
+
+        <div class="field">
+          <label for="filterProfileCard">资料卡过滤 <output id="filterProfileCardValue">on</output></label>
+          <input id="filterProfileCard" type="checkbox" checked>
+        </div>
+
+        <div class="actions">
+          <button class="button primary" id="splitButton" onclick="runSplit()" disabled>开始分格</button>
+          <button class="button" id="clearButton" type="button">清空</button>
+        </div>
+      </section>
+
+      <div class="status" id="status">等待图片。</div>
+    </aside>
+
+    <section class="workspace">
+      <div class="preview-shell">
+        <div class="empty" id="emptyState">上传漫画页后，这里会显示原图和红色检测框。</div>
+        <div class="preview-stage" id="previewStage">
+          <div class="image-wrap" id="imageWrap">
+            <img id="sourceImage" alt="待分格漫画页">
+            <canvas id="overlayCanvas"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <section class="results" aria-label="分割结果">
+        <div class="results-head">
+          <h2 id="resultTitle">输出面板</h2>
+          <div class="download-actions">
+            <a class="manifest-link" id="downloadManifest" href="#" download="manifest.json" aria-disabled="true">下载 manifest</a>
+            <a class="manifest-link" id="downloadZip" href="#" download="comic_panels.zip" aria-disabled="true">下载 ZIP</a>
+          </div>
+        </div>
+        <div class="panel-grid" id="panelGrid"></div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const state = {
+      fileName: "",
+      image: null,
+      imageBitmapCanvas: null,
+      panels: [],
+      postFilter: null,
+      profileFilter: null,
+      objectUrl: null,
+      manifestUrl: null,
+      zipUrl: null
+    };
+
+    const els = {
+      imageInput: document.getElementById("imageInput"),
+      dropzone: document.getElementById("dropzone"),
+      splitButton: document.getElementById("splitButton"),
+      clearButton: document.getElementById("clearButton"),
+      status: document.getElementById("status"),
+      sourceImage: document.getElementById("sourceImage"),
+      overlayCanvas: document.getElementById("overlayCanvas"),
+      previewStage: document.getElementById("previewStage"),
+      emptyState: document.getElementById("emptyState"),
+      panelGrid: document.getElementById("panelGrid"),
+      resultTitle: document.getElementById("resultTitle"),
+      downloadManifest: document.getElementById("downloadManifest"),
+      downloadZip: document.getElementById("downloadZip"),
+      backgroundMode: document.getElementById("backgroundMode"),
+      separatorRatio: document.getElementById("separatorRatio"),
+      backgroundTolerance: document.getElementById("backgroundTolerance"),
+      minPanelArea: document.getElementById("minPanelArea"),
+      padding: document.getElementById("padding"),
+      filterTextStrips: document.getElementById("filterTextStrips"),
+      filterTextStripsValue: document.getElementById("filterTextStripsValue"),
+      filterProfileCard: document.getElementById("filterProfileCard"),
+      filterProfileCardValue: document.getElementById("filterProfileCardValue")
+    };
+
+    bindControls();
+
+    function bindControls() {
+      els.imageInput.addEventListener("change", event => {
+        const file = event.target.files && event.target.files[0];
+        if (file) loadFile(file);
+      });
+
+      els.dropzone.addEventListener("dragover", event => {
+        event.preventDefault();
+        els.dropzone.classList.add("dragover");
+      });
+      els.dropzone.addEventListener("dragleave", () => {
+        els.dropzone.classList.remove("dragover");
+      });
+      els.dropzone.addEventListener("drop", event => {
+        event.preventDefault();
+        els.dropzone.classList.remove("dragover");
+        const file = event.dataTransfer.files && event.dataTransfer.files[0];
+        if (file) loadFile(file);
+      });
+
+      els.clearButton.addEventListener("click", resetApp);
+
+      [
+        ["backgroundMode", "backgroundModeValue"],
+        ["separatorRatio", "separatorRatioValue"],
+        ["backgroundTolerance", "backgroundToleranceValue"],
+        ["minPanelArea", "minPanelAreaValue"],
+        ["padding", "paddingValue"]
+      ].forEach(([inputId, outputId]) => {
+        const input = document.getElementById(inputId);
+        const output = document.getElementById(outputId);
+        input.addEventListener("input", () => {
+          output.textContent = input.value;
+          if (state.image) runSplit();
+        });
+      });
+
+      els.filterTextStrips.addEventListener("change", () => {
+        els.filterTextStripsValue.textContent = els.filterTextStrips.checked ? "on" : "off";
+        if (state.image) runSplit();
+      });
+      els.filterProfileCard.addEventListener("change", () => {
+        els.filterProfileCardValue.textContent = els.filterProfileCard.checked ? "on" : "off";
+        if (state.image) runSplit();
+      });
+
+      window.addEventListener("resize", () => {
+        if (state.panels.length) drawOverlay(state.panels);
+      });
+    }
+
+    function loadFile(file) {
+      if (!file.type.startsWith("image/")) {
+        setStatus("请选择图片文件。");
+        return;
+      }
+
+      revokeUrls();
+      state.fileName = file.name;
+      state.objectUrl = URL.createObjectURL(file);
+
+      const image = new Image();
+      image.onload = () => {
+        state.image = image;
+        state.imageBitmapCanvas = imageToCanvas(image);
+        els.sourceImage.src = state.objectUrl;
+        els.emptyState.style.display = "none";
+        els.previewStage.style.display = "block";
+        els.splitButton.disabled = false;
+        clearResults();
+        setStatus(`已载入 ${file.name}，尺寸 ${image.naturalWidth} × ${image.naturalHeight}。`);
+        requestAnimationFrame(() => runSplit());
+      };
+      image.onerror = () => setStatus("图片读取失败。");
+      image.src = state.objectUrl;
+    }
+
+    function runSplit() {
+      if (!state.image || !state.imageBitmapCanvas) return;
+
+      const options = {
+        background: els.backgroundMode.value,
+        separatorRatio: Number(els.separatorRatio.value),
+        backgroundTolerance: Number(els.backgroundTolerance.value),
+        minPanelArea: Number(els.minPanelArea.value),
+        padding: Number(els.padding.value),
+        filterProfileCard: els.filterProfileCard.checked,
+        filterTextStrips: els.filterTextStrips.checked,
+        minGutter: 4,
+        minPanelWidth: 32,
+        minPanelHeight: 32
+      };
+
+      const result = detectPanels(state.imageBitmapCanvas, options);
+      const panels = result.panels;
+      state.panels = panels;
+      state.postFilter = result.postFilter;
+      state.profileFilter = result.profileFilter;
+      drawOverlay(panels);
+      renderPanels(panels);
+      renderManifest(panels);
+      renderZipDownload(panels);
+      const profileNote = result.profileFilter.enabled
+        ? `资料卡过滤 ${result.profileFilter.removed_count}。`
+        : "资料卡过滤关闭。";
+      const filterNote = result.postFilter.enabled
+        ? `候选 ${result.postFilter.raw_count}，过滤 ${result.postFilter.removed_count}。`
+        : "文本条过滤关闭。";
+      setStatus(`检测到 ${panels.length} 个漫画格。${profileNote}${filterNote} 若漏切或误切，优先调“分隔线阈值”和“背景容差”。`);
+    }
+
+    function detectPanels(canvas, options) {
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      const { width, height } = canvas;
+      const imageData = ctx.getImageData(0, 0, width, height);
+      const pixels = grayscale(imageData.data, width, height);
+      const background = resolveBackground(pixels, width, height, options.background);
+      const backgroundFlags = makeBackgroundFlags(pixels, background, options.backgroundTolerance);
+      const contentBox = boundingBox(backgroundFlags, width, height, false);
+      if (!contentBox) {
+        return {
+          panels: [],
+          postFilter: {
+            enabled: options.filterTextStrips,
+            raw_count: 0,
+            filtered_count: 0,
+            removed_count: 0,
+            rules: textArtifactFilterRules(width, height),
+            removed: []
+          },
+          profileFilter: {
+            enabled: options.filterProfileCard,
+            candidate_count: 0,
+            kept_right_candidate_count: 0,
+            removed_count: 0,
+            split_x_px: looksLikeProfileCardSpread(width, height) ? profileCardSplitX(width) : null,
+            removed: []
+          }
+        };
+      }
+
+      const leaves = splitRect(contentBox, backgroundFlags, width, height, options);
+      const rects = [];
+      leaves.forEach(rect => {
+        const refined = refineToContent(rect, backgroundFlags, width, height, options.padding);
+        if (!refined) return;
+        if (area(refined) < options.minPanelArea) return;
+        if (refined[2] - refined[0] < options.minPanelWidth) return;
+        if (refined[3] - refined[1] < options.minPanelHeight) return;
+        rects.push(refined);
+      });
+
+      const candidateBoxes = sortReadingOrder(dedupeRects(rects));
+      const profileResult = options.filterProfileCard
+        ? filterProfileCardRegion(candidateBoxes, width, height)
+        : { kept: candidateBoxes, removed: [] };
+      const filterResult = options.filterTextStrips
+        ? filterTextArtifacts(profileResult.kept, width, height)
+        : { kept: profileResult.kept, removed: [] };
+
+      return {
+        panels: filterResult.kept.map((box, index) => ({
+          id: `panel_${String(index + 1).padStart(3, "0")}`,
+          box,
+          width: box[2] - box[0],
+          height: box[3] - box[1]
+        })),
+        postFilter: {
+          enabled: options.filterTextStrips,
+          raw_count: candidateBoxes.length,
+          filtered_count: filterResult.kept.length,
+          removed_count: filterResult.removed.length,
+          rules: textArtifactFilterRules(width, height),
+          removed: filterResult.removed
+        },
+        profileFilter: {
+          enabled: options.filterProfileCard,
+          candidate_count: candidateBoxes.length,
+          kept_right_candidate_count: profileResult.kept.length,
+          removed_count: profileResult.removed.length,
+          split_x_px: looksLikeProfileCardSpread(width, height) ? profileCardSplitX(width) : null,
+          removed: profileResult.removed
+        }
+      };
+    }
+
+    function grayscale(data, width, height) {
+      const values = new Uint8Array(width * height);
+      for (let i = 0, j = 0; i < data.length; i += 4, j += 1) {
+        values[j] = Math.round(data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114);
+      }
+      return values;
+    }
+
+    function resolveBackground(pixels, width, height, mode) {
+      if (mode !== "auto") return mode;
+      const edge = Math.max(3, Math.floor(Math.min(width, height) / 80));
+      const samples = [];
+      for (let y = 0; y < height; y += 1) {
+        for (let x = 0; x < width; x += 1) {
+          if (x < edge || x >= width - edge || y < edge || y >= height - edge) {
+            samples.push(pixels[y * width + x]);
+          }
+        }
+      }
+      samples.sort((a, b) => a - b);
+      return samples[Math.floor(samples.length / 2)] >= 128 ? "light" : "dark";
+    }
+
+    function makeBackgroundFlags(pixels, background, tolerance) {
+      const flags = new Uint8Array(pixels.length);
+      for (let i = 0; i < pixels.length; i += 1) {
+        flags[i] = background === "light" ? Number(pixels[i] >= 255 - tolerance) : Number(pixels[i] <= tolerance);
+      }
+      return flags;
+    }
+
+    function splitRect(rect, backgroundFlags, width, height, options) {
+      const [x1, y1, x2, y2] = rect;
+      const rectWidth = x2 - x1;
+      const rectHeight = y2 - y1;
+      if (rectWidth < options.minPanelWidth * 2 || rectHeight < options.minPanelHeight * 2) return [rect];
+
+      const horizontalRatios = [];
+      for (let y = y1; y < y2; y += 1) {
+        let count = 0;
+        for (let x = x1; x < x2; x += 1) count += backgroundFlags[y * width + x];
+        horizontalRatios.push(count / rectWidth);
+      }
+      const horizontal = separatorBands(horizontalRatios, options.separatorRatio, options.minGutter, options.minPanelHeight, options.minPanelHeight, rectHeight);
+      if (horizontal.length) return splitByBands(rect, horizontal, "horizontal", backgroundFlags, width, height, options);
+
+      const verticalRatios = [];
+      for (let x = x1; x < x2; x += 1) {
+        let count = 0;
+        for (let y = y1; y < y2; y += 1) count += backgroundFlags[y * width + x];
+        verticalRatios.push(count / rectHeight);
+      }
+      const vertical = separatorBands(verticalRatios, options.separatorRatio, options.minGutter, options.minPanelWidth, options.minPanelWidth, rectWidth);
+      if (vertical.length) return splitByBands(rect, vertical, "vertical", backgroundFlags, width, height, options);
+
+      return [rect];
+    }
+
+    function separatorBands(ratios, threshold, minGutter, minBefore, minAfter, total) {
+      const bands = [];
+      let start = -1;
+      for (let i = 0; i < ratios.length; i += 1) {
+        if (ratios[i] >= threshold && start < 0) start = i;
+        if ((ratios[i] < threshold || i === ratios.length - 1) && start >= 0) {
+          const end = ratios[i] < threshold ? i : i + 1;
+          if (end - start >= minGutter && start >= minBefore && total - end >= minAfter) {
+            bands.push([start, end]);
+          }
+          start = -1;
+        }
+      }
+      return bands;
+    }
+
+    function splitByBands(rect, bands, axis, backgroundFlags, width, height, options) {
+      const pieces = [];
+      const limit = axis === "horizontal" ? rect[3] - rect[1] : rect[2] - rect[0];
+      let cursor = 0;
+      bands.forEach(([start, end]) => {
+        if (start > cursor) pieces.push(sliceRect(rect, cursor, start, axis));
+        cursor = end;
+      });
+      if (cursor < limit) pieces.push(sliceRect(rect, cursor, limit, axis));
+
+      const result = [];
+      pieces.forEach(piece => {
+        if (piece[2] - piece[0] < options.minPanelWidth) return;
+        if (piece[3] - piece[1] < options.minPanelHeight) return;
+        result.push(...splitRect(piece, backgroundFlags, width, height, options));
+      });
+      return result.length ? result : [rect];
+    }
+
+    function sliceRect(rect, start, end, axis) {
+      const [x1, y1, x2, y2] = rect;
+      return axis === "horizontal" ? [x1, y1 + start, x2, y1 + end] : [x1 + start, y1, x1 + end, y2];
+    }
+
+    function refineToContent(rect, backgroundFlags, width, height, padding) {
+      const box = boundingBox(backgroundFlags, width, height, false, rect);
+      if (!box) return null;
+      return [
+        Math.max(0, box[0] - padding),
+        Math.max(0, box[1] - padding),
+        Math.min(width, box[2] + padding),
+        Math.min(height, box[3] + padding)
+      ];
+    }
+
+    function boundingBox(backgroundFlags, width, height, matchBackground, rect) {
+      const xStart = rect ? rect[0] : 0;
+      const yStart = rect ? rect[1] : 0;
+      const xEnd = rect ? rect[2] : width;
+      const yEnd = rect ? rect[3] : height;
+      let minX = Infinity;
+      let minY = Infinity;
+      let maxX = -Infinity;
+      let maxY = -Infinity;
+      for (let y = yStart; y < yEnd; y += 1) {
+        for (let x = xStart; x < xEnd; x += 1) {
+          const isBackground = backgroundFlags[y * width + x] === 1;
+          if (isBackground === matchBackground) {
+            minX = Math.min(minX, x);
+            minY = Math.min(minY, y);
+            maxX = Math.max(maxX, x);
+            maxY = Math.max(maxY, y);
+          }
+        }
+      }
+      if (!Number.isFinite(minX)) return null;
+      return [minX, minY, maxX + 1, maxY + 1];
+    }
+
+    function drawOverlay(panels) {
+      const canvas = els.overlayCanvas;
+      const displayed = els.sourceImage.getBoundingClientRect();
+      const naturalWidth = state.image.naturalWidth;
+      const naturalHeight = state.image.naturalHeight;
+      canvas.width = Math.max(1, Math.round(displayed.width));
+      canvas.height = Math.max(1, Math.round(displayed.height));
+      canvas.style.width = `${displayed.width}px`;
+      canvas.style.height = `${displayed.height}px`;
+
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = "#ff3b32";
+      ctx.fillStyle = "#ff3b32";
+      ctx.font = "700 14px ui-sans-serif, sans-serif";
+      const scaleX = canvas.width / naturalWidth;
+      const scaleY = canvas.height / naturalHeight;
+
+      panels.forEach((panel, index) => {
+        const [x1, y1, x2, y2] = panel.box;
+        const x = x1 * scaleX;
+        const y = y1 * scaleY;
+        const w = (x2 - x1) * scaleX;
+        const h = (y2 - y1) * scaleY;
+        ctx.strokeRect(x, y, w, h);
+        ctx.fillRect(x + 4, y + 4, 26, 22);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillText(String(index + 1), x + 12, y + 20);
+        ctx.fillStyle = "#ff3b32";
+      });
+    }
+
+    function renderPanels(panels) {
+      els.panelGrid.innerHTML = "";
+      els.resultTitle.textContent = `输出面板：${panels.length}`;
+      panels.forEach(panel => {
+        const dataUrl = cropPanel(panel.box);
+        const card = document.createElement("article");
+        card.className = "panel-card";
+        card.innerHTML = `
+          <img src="${dataUrl}" alt="${panel.id}">
+          <div class="panel-meta">
+            <span>${panel.id}<br>${panel.width} × ${panel.height}</span>
+            <a href="${dataUrl}" download="${panel.id}.png">下载</a>
+          </div>
+        `;
+        els.panelGrid.appendChild(card);
+      });
+    }
+
+    function renderManifest(panels) {
+      if (state.manifestUrl) URL.revokeObjectURL(state.manifestUrl);
+      const blob = new Blob([manifestText(panels)], { type: "application/json" });
+      state.manifestUrl = URL.createObjectURL(blob);
+      els.downloadManifest.href = state.manifestUrl;
+      els.downloadManifest.setAttribute("download", "manifest.json");
+      els.downloadManifest.setAttribute("aria-disabled", "false");
+    }
+
+    function renderZipDownload(panels) {
+      if (state.zipUrl) URL.revokeObjectURL(state.zipUrl);
+      if (!panels.length) {
+        els.downloadZip.href = "#";
+        els.downloadZip.setAttribute("aria-disabled", "true");
+        return;
+      }
+
+      const files = panels.map(panel => ({
+        name: `panels/${panel.id}.png`,
+        bytes: dataUrlToBytes(cropPanel(panel.box))
+      }));
+      files.push({
+        name: "manifest.json",
+        bytes: new TextEncoder().encode(manifestText(panels))
+      });
+
+      const zipBlob = new Blob([buildZip(files)], { type: "application/zip" });
+      state.zipUrl = URL.createObjectURL(zipBlob);
+      els.downloadZip.href = state.zipUrl;
+      els.downloadZip.setAttribute("download", `${safeBaseName(state.fileName) || "comic"}_panels.zip`);
+      els.downloadZip.setAttribute("aria-disabled", "false");
+    }
+
+    function manifestText(panels) {
+      const manifest = {
+        source: state.fileName,
+        image_width: state.image.naturalWidth,
+        image_height: state.image.naturalHeight,
+        settings: {
+          background: els.backgroundMode.value,
+          background_tolerance: Number(els.backgroundTolerance.value),
+          separator_ratio: Number(els.separatorRatio.value),
+          min_panel_area: Number(els.minPanelArea.value),
+          padding: Number(els.padding.value),
+          filter_profile_card: els.filterProfileCard.checked,
+          filter_text_strips: els.filterTextStrips.checked
+        },
+        profile_filter: state.profileFilter,
+        post_filter: state.postFilter,
+        panels: panels.map(panel => ({
+          id: panel.id,
+          file: `panels/${panel.id}.png`,
+          box: panel.box,
+          width: panel.width,
+          height: panel.height
+        }))
+      };
+      return JSON.stringify(manifest, null, 2) + "\n";
+    }
+
+    function cropPanel(box) {
+      const [x1, y1, x2, y2] = box;
+      const canvas = document.createElement("canvas");
+      canvas.width = x2 - x1;
+      canvas.height = y2 - y1;
+      canvas.getContext("2d").drawImage(state.image, x1, y1, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
+      return canvas.toDataURL("image/png");
+    }
+
+    function imageToCanvas(image) {
+      const canvas = document.createElement("canvas");
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      canvas.getContext("2d").drawImage(image, 0, 0);
+      return canvas;
+    }
+
+    function clearResults() {
+      state.panels = [];
+      state.postFilter = null;
+      state.profileFilter = null;
+      els.panelGrid.innerHTML = "";
+      els.resultTitle.textContent = "输出面板";
+      els.downloadManifest.href = "#";
+      els.downloadManifest.setAttribute("aria-disabled", "true");
+      els.downloadZip.href = "#";
+      els.downloadZip.setAttribute("aria-disabled", "true");
+      const ctx = els.overlayCanvas.getContext("2d");
+      ctx.clearRect(0, 0, els.overlayCanvas.width, els.overlayCanvas.height);
+    }
+
+    function resetApp() {
+      revokeUrls();
+      state.fileName = "";
+      state.image = null;
+      state.imageBitmapCanvas = null;
+      els.imageInput.value = "";
+      els.sourceImage.removeAttribute("src");
+      els.previewStage.style.display = "none";
+      els.emptyState.style.display = "block";
+      els.splitButton.disabled = true;
+      clearResults();
+      setStatus("等待图片。");
+    }
+
+    function revokeUrls() {
+      if (state.objectUrl) URL.revokeObjectURL(state.objectUrl);
+      if (state.manifestUrl) URL.revokeObjectURL(state.manifestUrl);
+      if (state.zipUrl) URL.revokeObjectURL(state.zipUrl);
+      state.objectUrl = null;
+      state.manifestUrl = null;
+      state.zipUrl = null;
+    }
+
+    function setStatus(message) {
+      els.status.textContent = message;
+    }
+
+    function filterProfileCardRegion(rects, imageWidth, imageHeight) {
+      if (!looksLikeProfileCardSpread(imageWidth, imageHeight)) {
+        return { kept: rects, removed: [] };
+      }
+
+      const splitX = profileCardSplitX(imageWidth);
+      const kept = [];
+      const removed = [];
+      rects.forEach((rect, index) => {
+        const centerX = (rect[0] + rect[2]) / 2;
+        if (centerX <= splitX) {
+          removed.push(removedManifestEntry(index + 1, rect, "left_profile_card"));
+          return;
+        }
+        kept.push(rect);
+      });
+      return { kept, removed };
+    }
+
+    function looksLikeProfileCardSpread(imageWidth, imageHeight) {
+      const aspectRatio = imageWidth / Math.max(1, imageHeight);
+      return imageWidth >= 1400 && imageHeight >= 800 && aspectRatio >= 1.65 && aspectRatio <= 1.9;
+    }
+
+    function profileCardSplitX(imageWidth) {
+      return Math.round(imageWidth * 0.39);
+    }
+
+    function filterTextArtifacts(rects, imageWidth, imageHeight) {
+      const kept = [];
+      const removed = [];
+      rects.forEach((rect, index) => {
+        const reason = textArtifactReason(rect, imageWidth, imageHeight);
+        if (reason) {
+          removed.push(removedManifestEntry(index + 1, rect, reason));
+          return;
+        }
+        kept.push(rect);
+      });
+      return { kept, removed };
+    }
+
+    function textArtifactFilterRules(imageWidth, imageHeight) {
+      return {
+        short_strip_max_height_px: shortStripMaxHeight(imageHeight),
+        short_strip_min_aspect_ratio: 2,
+        narrow_sliver_max_width_px: narrowSliverMaxWidth(imageWidth),
+        narrow_sliver_max_height_px: narrowSliverMaxHeight(imageHeight),
+        narrow_sliver_min_aspect_ratio: 2,
+        tiny_artifact_max_area_px: tinyArtifactMaxArea(imageWidth, imageHeight)
+      };
+    }
+
+    function textArtifactReason(rect, imageWidth, imageHeight) {
+      const width = rect[2] - rect[0];
+      const height = rect[3] - rect[1];
+      const rectArea = width * height;
+      const aspectRatio = width / Math.max(1, height);
+      const inverseAspectRatio = height / Math.max(1, width);
+
+      if (height <= shortStripMaxHeight(imageHeight) && aspectRatio >= 2) {
+        return "text_or_caption_strip";
+      }
+      if (
+        width <= narrowSliverMaxWidth(imageWidth) &&
+        height <= narrowSliverMaxHeight(imageHeight) &&
+        inverseAspectRatio >= 2
+      ) {
+        return "narrow_text_or_caption_sliver";
+      }
+      if (
+        rectArea <= tinyArtifactMaxArea(imageWidth, imageHeight) &&
+        (
+          height <= shortStripMaxHeight(imageHeight) ||
+          width <= narrowSliverMaxWidth(imageWidth) ||
+          aspectRatio >= 3 ||
+          inverseAspectRatio >= 3
+        )
+      ) {
+        return "small_text_or_decoration_fragment";
+      }
+      return "";
+    }
+
+    function shortStripMaxHeight(imageHeight) {
+      return Math.round(Math.max(48, Math.min(90, imageHeight * 0.085)));
+    }
+
+    function narrowSliverMaxWidth(imageWidth) {
+      return Math.round(Math.max(64, Math.min(120, imageWidth * 0.07)));
+    }
+
+    function narrowSliverMaxHeight(imageHeight) {
+      return Math.round(Math.max(140, Math.min(260, imageHeight * 0.28)));
+    }
+
+    function tinyArtifactMaxArea(imageWidth, imageHeight) {
+      return Math.round(Math.max(12000, Math.min(20000, imageWidth * imageHeight * 0.012)));
+    }
+
+    function removedManifestEntry(index, rect, reason) {
+      const width = rect[2] - rect[0];
+      const height = rect[3] - rect[1];
+      return {
+        id: `candidate_${String(index).padStart(3, "0")}`,
+        box: rect,
+        width,
+        height,
+        area: width * height,
+        aspect_ratio: Number((width / Math.max(1, height)).toFixed(4)),
+        reason
+      };
+    }
+
+    function area(rect) {
+      return Math.max(0, rect[2] - rect[0]) * Math.max(0, rect[3] - rect[1]);
+    }
+
+    function dedupeRects(rects) {
+      const unique = [];
+      rects.forEach(rect => {
+        if (!unique.some(existing => iou(rect, existing) > 0.94)) unique.push(rect);
+      });
+      return unique;
+    }
+
+    function iou(a, b) {
+      const intersection = area([
+        Math.max(a[0], b[0]),
+        Math.max(a[1], b[1]),
+        Math.min(a[2], b[2]),
+        Math.min(a[3], b[3])
+      ]);
+      return intersection === 0 ? 0 : intersection / (area(a) + area(b) - intersection);
+    }
+
+    function sortReadingOrder(rects) {
+      if (!rects.length) return [];
+      const heights = rects.map(rect => rect[3] - rect[1]).sort((a, b) => a - b);
+      const medianHeight = heights[Math.floor(heights.length / 2)];
+      const rowTolerance = Math.max(12, medianHeight * 0.35);
+      const rows = [];
+      rects.sort((a, b) => a[1] - b[1] || a[0] - b[0]).forEach(rect => {
+        const centerY = (rect[1] + rect[3]) / 2;
+        const row = rows.find(items => Math.abs(centerY - average(items.map(item => (item[1] + item[3]) / 2))) <= rowTolerance);
+        if (row) row.push(rect);
+        else rows.push([rect]);
+      });
+      return rows.flatMap(row => row.sort((a, b) => a[0] - b[0]));
+    }
+
+    function average(values) {
+      return values.reduce((sum, value) => sum + value, 0) / values.length;
+    }
+
+    function dataUrlToBytes(dataUrl) {
+      const base64 = dataUrl.slice(dataUrl.indexOf(",") + 1);
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+      return bytes;
+    }
+
+    function buildZip(files) {
+      const encoder = new TextEncoder();
+      const localParts = [];
+      const centralParts = [];
+      let offset = 0;
+
+      files.forEach(file => {
+        const nameBytes = encoder.encode(file.name);
+        const data = file.bytes;
+        const checksum = crc32(data);
+
+        const localHeader = new Uint8Array(30 + nameBytes.length);
+        const localView = new DataView(localHeader.buffer);
+        localView.setUint32(0, 0x04034b50, true);
+        localView.setUint16(4, 20, true);
+        localView.setUint16(6, 0, true);
+        localView.setUint16(8, 0, true);
+        localView.setUint16(10, 0, true);
+        localView.setUint16(12, 0, true);
+        localView.setUint32(14, checksum, true);
+        localView.setUint32(18, data.length, true);
+        localView.setUint32(22, data.length, true);
+        localView.setUint16(26, nameBytes.length, true);
+        localHeader.set(nameBytes, 30);
+        localParts.push(localHeader, data);
+
+        const centralHeader = new Uint8Array(46 + nameBytes.length);
+        const centralView = new DataView(centralHeader.buffer);
+        centralView.setUint32(0, 0x02014b50, true);
+        centralView.setUint16(4, 20, true);
+        centralView.setUint16(6, 20, true);
+        centralView.setUint16(8, 0, true);
+        centralView.setUint16(10, 0, true);
+        centralView.setUint16(12, 0, true);
+        centralView.setUint16(14, 0, true);
+        centralView.setUint32(16, checksum, true);
+        centralView.setUint32(20, data.length, true);
+        centralView.setUint32(24, data.length, true);
+        centralView.setUint16(28, nameBytes.length, true);
+        centralView.setUint32(42, offset, true);
+        centralHeader.set(nameBytes, 46);
+        centralParts.push(centralHeader);
+
+        offset += localHeader.length + data.length;
+      });
+
+      const centralSize = centralParts.reduce((sum, part) => sum + part.length, 0);
+      const endRecord = new Uint8Array(22);
+      const endView = new DataView(endRecord.buffer);
+      endView.setUint32(0, 0x06054b50, true);
+      endView.setUint16(8, files.length, true);
+      endView.setUint16(10, files.length, true);
+      endView.setUint32(12, centralSize, true);
+      endView.setUint32(16, offset, true);
+
+      return concatenateUint8Arrays([...localParts, ...centralParts, endRecord]);
+    }
+
+    function crc32(bytes) {
+      let crc = 0xffffffff;
+      for (let i = 0; i < bytes.length; i += 1) {
+        crc ^= bytes[i];
+        for (let bit = 0; bit < 8; bit += 1) {
+          crc = (crc >>> 1) ^ (0xedb88320 & -(crc & 1));
+        }
+      }
+      return (crc ^ 0xffffffff) >>> 0;
+    }
+
+    function concatenateUint8Arrays(parts) {
+      const total = parts.reduce((sum, part) => sum + part.length, 0);
+      const result = new Uint8Array(total);
+      let cursor = 0;
+      parts.forEach(part => {
+        result.set(part, cursor);
+        cursor += part.length;
+      });
+      return result;
+    }
+
+    function safeBaseName(fileName) {
+      return fileName.replace(/\.[^.]+$/, "").replace(/[^a-zA-Z0-9_-]+/g, "_").replace(/^_+|_+$/g, "");
+    }
+  </script>
+</body>
+</html>

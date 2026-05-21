@@ -1,0 +1,51 @@
+{
+  "name": "motion-comic-agent-workflow",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local-first workflow for turning comic pages and narration beats into reviewable 2.5D motion-comic videos.",
+  "license": "MIT",
+  "keywords": [
+    "motion-comic",
+    "remotion",
+    "ffmpeg",
+    "comic-video",
+    "ai-workflow",
+    "codex-skill",
+    "2d-animation",
+    "video-pipeline"
+  ],
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "sample": "node scripts/create-sample-input.mjs",
+    "build": "node scripts/generate-project.mjs",
+    "build:sample": "npm run sample && npm run build",
+    "export:ae": "node scripts/export-ae-package.mjs",
+    "align-audio": "node scripts/build-forced-aligned-voice-timeline.mjs",
+    "compose:preview": "node scripts/compose-preview-video.mjs",
+    "burn-subtitles": "node scripts/burn-subtitles.mjs",
+    "validate:vertical-prompts": "node .codex/skills/comic-control-page-video/scripts/validate-vertical-page-prompts.mjs",
+    "render:preview": "npm --prefix render/remotion run render:preview",
+    "verify:assets": "node scripts/verify-assets.mjs",
+    "verify:video": "node scripts/verify-videos.mjs",
+    "qa": "node scripts/qa.mjs",
+    "verify": "npm run verify:assets && npm run verify:video && npm run qa"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.0",
+    "pngjs": "^7.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "remotion": "^4.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hideaway007/2d-comic-video-workflow.git"
+  },
+  "bugs": {
+    "url": "https://github.com/hideaway007/2d-comic-video-workflow/issues"
+  }
+}

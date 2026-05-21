@@ -1,0 +1,7 @@
+interface:
+  display_name: "9:16 单页漫画视频"
+  short_description: "江湖野史或中式克苏鲁 topic pack 路由，按 beat 对齐口播、导演统筹、9:16 图片、时间戳和视频"
+  default_prompt: "使用 $comic-control-page-video，先按题材路由到历史或中式克苏鲁 topic pack；口播通过后先生成 timeline_beats.json，再生成 director_visual_plan.json 统一控制分镜、运镜、灯光、场景总平面和人物动线；随后生成参考图包和 9:16 vertical_page_prompts，分派 6 个 subagent image_gen workers 分批生成 story_pages；图片确认后继续儒雅逸辰 2.0 / 1.25x 豆包语音、2.5D 漫画视频和字幕版视频。"
+
+policy:
+  allow_implicit_invocation: true
