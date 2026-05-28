@@ -1,0 +1,7 @@
+interface:
+  display_name: "漫画前期策划"
+  short_description: "把 idea、小说、剧本或 brief 整理成 00_brief 前期策划包，包含事件场景拆解、角色环境道具 registry 和参考图选择策略"
+  default_prompt: "使用 $comic-upstream-planner，先按 idea/novel/script/brief 判断输入模式，生成 00_brief/story_strategy.json、event_scene_map.json、character_registry.json、environment_registry.json、prop_registry.json、reference_selection_plan.json 和 adaptation_plan.md；运行 validate:upstream-plan，确认 upstream_planning_audit.json.passed 为 true；通过后再交给 $comic-control-page-video 继续口播、图片、语音和视频生产。"
+
+policy:
+  allow_implicit_invocation: true

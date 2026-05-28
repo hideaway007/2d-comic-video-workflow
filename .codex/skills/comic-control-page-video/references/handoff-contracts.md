@@ -7,6 +7,27 @@
 和 splitter 裁切契约不再属于默认流程。新流程默认是一 beat 对应一张 9:16
 `story_page`。
 
+## Upstream planning pack dependency
+
+前期策划包由 `$comic-upstream-planner` 生成并验证。默认输入位置：
+
+```text
+00_brief/story_strategy.json
+00_brief/event_scene_map.json
+00_brief/character_registry.json
+00_brief/environment_registry.json
+00_brief/prop_registry.json
+00_brief/reference_selection_plan.json
+00_brief/adaptation_plan.md
+00_brief/upstream_planning_audit.json
+```
+
+规则：
+
+- `00_brief/upstream_planning_audit.json.passed` 必须为 `true`，除非用户明确提供完整可用口播并要求跳过前期策划。
+- `$comic-control-page-video` 只消费这些文件，不维护 Phase 0 schema。详细 schema 见 `$comic-upstream-planner` 的 `references/handoff-contracts.md`。
+- 如果前期策划包缺失或未通过，先切回 `$comic-upstream-planner` 修 `00_brief`，不要在视频 skill 内重新规划故事。
+
 ## story_package.json
 
 ```json
@@ -22,6 +43,9 @@
   "narration_path": "01_script/narration.md",
   "review_packet_path": "01_script/human_review_packet.md",
   "fiction_boundary_path": "01_script/fiction_boundary.md",
+  "upstream_plan_path": "00_brief/story_strategy.json",
+  "event_scene_map_path": "00_brief/event_scene_map.json",
+  "character_registry_path": "00_brief/character_registry.json",
   "style_reference_manifest_path": "00_brief/style_reference_manifest.json",
   "image_keywords": ["古井", "祠堂", "族谱", "黑水", "盐霜", "无眼神像"]
 }
@@ -32,6 +56,8 @@
 - `mode=jianghu_yeshi_rebirth_narration` 时必须有 `historical_fact_base_path`。
 - `mode=chinese_cthulhu_weird_tale` 时必须有 `fiction_boundary_path`，不得写真实
   历史事实底座。
+- 默认必须记录 `upstream_plan_path`、`event_scene_map_path` 和
+  `character_registry_path`，除非用户明确跳过 Phase 0 并写明原因。
 - 审核前不要生成 `timeline_beats.json`、`director_visual_plan.json`、
   `audio_segments.json`、`narration_timestamps.json` 或 `vertical_page_prompts.json`。
 
