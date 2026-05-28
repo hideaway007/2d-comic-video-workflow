@@ -92,8 +92,12 @@
   "segmentation_policy": {
     "unit": "visual_beat",
     "target_chars": "20-50 Chinese chars, hard constraint",
+    "max_effective_narration_chars_per_page": 40,
+    "min_beat_text_coverage_ratio": 0.9,
     "target_duration_sec": "4-8 estimated before TTS",
-    "hard_rule": "one beat maps to one 9:16 story page, one audio segment, and one timestamp row"
+    "hard_rule": "one beat maps to one 9:16 story page, one audio segment, and one timestamp row",
+    "coverage_exception": null,
+    "density_exception": null
   },
   "beats": [
     {
@@ -124,6 +128,11 @@
 - 默认一 beat 对应一张 9:16 story page、一个 TTS audio segment 和一个 timestamp row。
 - `beats[*].text` 必须落在 20-50 个中文字符内；如有例外，必须写
   `segmentation_exception.reason`。
+- `beats[*].text` 合计必须覆盖 `01_script/narration.md` 主体口播，不得只写摘要版提纲；
+  默认覆盖率不得低于 90%。低于该覆盖率必须在
+  `segmentation_policy.coverage_exception.reason` 写明可审查原因。
+- 默认最低 story page 数为 `ceil(narration_effective_chars / 40)`；低于该页数必须在
+  `segmentation_policy.density_exception.reason` 写明可审查原因。
 - 不得为了减少图片、TTS 段数或 worker 批次而合并 beat 或放宽字数。
 - `visual_prompt_brief` 是图像 prompt 的语义种子，后续图片 prompt 只能扩写它，
   不能改变剧情含义。
@@ -315,6 +324,8 @@
 规则：
 
 - `pages.length` 必须等于 beat 数。
+- `pages.length` 还必须满足 `timeline_beats.json.segmentation_policy` 的最低页密度；
+  默认不得低于 `ceil(narration_effective_chars / 40)`。
 - `prompt` 只写画面生成指令，不写解释、Markdown 或 JSON 代码围栏。
 - 每页必须包含 `prompt_structure`、`continuity`、`storyboard_frame` 和
   `neighbor_context`。

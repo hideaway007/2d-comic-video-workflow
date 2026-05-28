@@ -135,6 +135,14 @@ Phase 1A 必须从 `00_brief/video_strategy.json`、`event_scene_map.json`、
 分段必须按“一个可视化瞬间 / 一个视觉动作”切分。20-50 个中文字符是强约束，
 不是软参考。不得为了减少图片、TTS 段数、worker 批次或渲染工作量而放宽。
 
+`timeline_beats.json.beats[*].text` 必须覆盖完整口播主体，而不是摘要版提纲。
+默认最低覆盖率为 90%；story page 密度默认按每页不超过 40 个有效口播字符计算。
+低于 90% 覆盖率时，必须写
+`timeline_beats.json.segmentation_policy.coverage_exception.reason`；低于
+`ceil(narration_effective_chars / 40)` 页时，必须写
+`timeline_beats.json.segmentation_policy.density_exception.reason`。没有可审查例外时
+gate 必须失败。
+
 ### 导演统筹先于图片 prompt
 
 生成任何单页图片 prompt 或分派 image worker 之前，必须先完成：
@@ -262,6 +270,7 @@ Phase 1A 完成后必须停住。只有用户明确通过后，才能把
    `order`、`text`、`estimated_start_sec`、`estimated_end_sec`、`page_id`、
    `audio_segment_id`、`visual_prompt_brief`、`scene_function`、`key_entities`
    和 `key_assets`。
+   `beats[*].text` 必须从 `narration.md` 顺序切分或近似完整摘取，不能只写摘要。
 3. 从 `timeline_beats.json` 派生 `01_script/audio_segments.json` 和
    `01_script/narration_timestamps.json`。真实语音生成前只能标注为
    `estimated_before_audio`。
@@ -275,9 +284,13 @@ Phase 1A 完成后必须停住。只有用户明确通过后，才能把
 规则：
 
 - `timeline_beats.json` 是唯一节奏权威；后续文件不得自造不同顺序或不同分段。
+- `timeline_beats.json.beats[*].text` 合计必须覆盖 `narration.md` 主体口播，
+  默认覆盖率不得低于 90%。
 - `storyboard_sequence_plan.json` 是连续分镜权威；`vertical_page_prompts.json`
   必须从对应 storyboard frame 派生，不得只把口播句子包装成单张插画。
 - 图片数量由 beat 数决定；一 beat 对应一张 9:16 story page。
+- 默认最低 story page 数为 `ceil(narration_effective_chars / 40)`；页数不足只能在
+  `segmentation_policy.density_exception.reason` 中写明可审查原因，不能静默压缩。
 - prompt 必须吸收 beat、director directive、storyboard frame、reference pack 和用户风格约束。
 - prompt 必须写清景别、视角、运镜意图、灯光、构图、entity 站位、asset 位置、
   setting 信息和禁止项。
@@ -289,6 +302,12 @@ Phase 1A 完成后必须停住。只有用户明确通过后，才能把
 ```bash
 npm run validate:vertical-prompts -- project_output/control-page-runs/<run>
 ```
+
+通过时必须确认 `02_prompts/vertical_page_prompt_audit.json` 中：
+
+- `passed === true`
+- `narration_coverage.beat_text_coverage_ratio >= 0.9`
+- `page_count >= narration_coverage.min_page_count_from_narration`
 
 ## Phase 2 - 参考图包与 9:16 单页剧情图
 
@@ -395,6 +414,8 @@ npm run align-audio -- project_output/control-page-runs/<run>
 - `timeline_beats.json.beats[*]` 与 `audio_segments.json.segments[*]`、
   `narration_timestamps.json.segments[*]`、`vertical_page_prompts.json.pages[*]`
   一一对应。
+- `vertical_page_prompt_audit.json.passed === true`，且 narration coverage 与 page
+  density gate 均通过。
 - reference boards 已生成并写入 `03_images/references/reference_manifest.json`。
 - `story_pages` 文件数等于 beat 数，尺寸为竖版，且 manifest 审核通过。
 - `voice_timeline.json.totalMs` 大于 0，且 `master.mp3` 是非空文件。

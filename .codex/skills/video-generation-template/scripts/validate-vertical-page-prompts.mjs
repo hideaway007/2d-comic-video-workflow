@@ -15,12 +15,16 @@ const runFolder = path.resolve(projectRoot, runFolderArg);
 const promptsPath = path.join(runFolder, "02_prompts", "vertical_page_prompts.json");
 const directorPath = path.join(runFolder, "02_prompts", "director_visual_plan.json");
 const storyboardPath = path.join(runFolder, "02_prompts", "storyboard_sequence_plan.json");
+const timelinePath = path.join(runFolder, "02_prompts", "timeline_beats.json");
+const narrationPath = path.join(runFolder, "01_script", "narration.md");
 const workerBatchesPath = path.join(runFolder, "02_prompts", "worker_batches");
 const auditPath = path.join(runFolder, "02_prompts", "vertical_page_prompt_audit.json");
 
 const prompts = await readJson(promptsPath);
 const director = await readJson(directorPath);
 const storyboard = await readJsonIfExists(storyboardPath);
+const timeline = await readJsonIfExists(timelinePath);
+const narrationText = await readTextIfExists(narrationPath);
 const pages = Array.isArray(prompts.pages) ? prompts.pages : [];
 const directives = Array.isArray(director.beat_directives) ? director.beat_directives : [];
 const frames = Array.isArray(storyboard?.frames) ? storyboard.frames : [];
@@ -54,6 +58,7 @@ validateShotScaleRatio({ pages, blockers, warnings });
 validateContinuityCoverage({ pages, blockers, warnings });
 validateSequenceShotVariety({ pages, blockers });
 await validateWorkerBatches({ workerBatchesPath, pages, storyboard, blockers });
+const narrationCoverage = validateNarrationCoverageAndDensity({ narrationText, timeline, pages, blockers, warnings });
 
 const audit = {
   version: 1,
@@ -61,6 +66,7 @@ const audit = {
   run_folder: normalizePath(path.relative(projectRoot, runFolder)),
   page_count: pages.length,
   storyboard_frame_count: frames.length,
+  narration_coverage: narrationCoverage,
   shot_scale_counts: countBy(pages.map((page) => page.prompt_structure?.shot_scale ?? page.director_directive?.shot_scale)),
   blockers,
   warnings,
@@ -356,6 +362,87 @@ function validateSequenceShotVariety({ pages, blockers: blockersValue }) {
   }
 }
 
+function validateNarrationCoverageAndDensity({ narrationText: narrationTextValue, timeline: timelineValue, pages, blockers: blockersValue, warnings: warningsValue }) {
+  const audit = {
+    checked: Boolean(narrationTextValue || timelineValue),
+    max_effective_narration_chars_per_page: 40,
+    min_beat_text_coverage_ratio: 0.9,
+    narration_char_count: 0,
+    beat_text_char_count: 0,
+    beat_text_coverage_ratio: null,
+    min_page_count_from_narration: null,
+    page_count: pages.length,
+    coverage_exception: null,
+    density_exception: null,
+    passed: true,
+  };
+
+  if (!narrationTextValue && !timelineValue) {
+    return audit;
+  }
+
+  if (narrationTextValue && !timelineValue) {
+    blockersValue.push("timeline_beats.json is required when narration.md exists");
+    audit.passed = false;
+    return audit;
+  }
+
+  const beats = Array.isArray(timelineValue?.beats) ? timelineValue.beats : [];
+  if (timelineValue && beats.length === 0) {
+    blockersValue.push("timeline_beats.json must contain non-empty beats when validating vertical prompt density");
+    audit.passed = false;
+  }
+  if (timelineValue && beats.length > 0 && beats.length !== pages.length) {
+    blockersValue.push(`timeline_beats.json beats length must equal vertical_page_prompts pages length: ${beats.length} !== ${pages.length}`);
+    audit.passed = false;
+  }
+
+  if (!narrationTextValue) {
+    warningsValue.push("narration.md is missing; skipped narration coverage and page density audit");
+    return audit;
+  }
+
+  const normalizedNarration = normalizeNarrationForDensity(narrationTextValue);
+  const normalizedBeatText = normalizeNarrationForDensity(beats.map((beat) => beat.text).join(""));
+  audit.narration_char_count = normalizedNarration.length;
+  audit.beat_text_char_count = normalizedBeatText.length;
+  audit.beat_text_coverage_ratio = normalizedNarration.length > 0
+    ? Number((normalizedBeatText.length / normalizedNarration.length).toFixed(3))
+    : null;
+  audit.min_page_count_from_narration = normalizedNarration.length > 0
+    ? Math.ceil(normalizedNarration.length / audit.max_effective_narration_chars_per_page)
+    : null;
+  audit.coverage_exception = timelineValue?.segmentation_policy?.coverage_exception ?? null;
+  audit.density_exception = timelineValue?.segmentation_policy?.density_exception ?? null;
+
+  if (normalizedNarration.length === 0) {
+    warningsValue.push("narration.md has no effective narration text after heading/whitespace cleanup");
+    return audit;
+  }
+
+  const hasCoverageException = hasExceptionReason(audit.coverage_exception);
+  const hasDensityException = hasExceptionReason(audit.density_exception);
+  if (audit.beat_text_coverage_ratio < audit.min_beat_text_coverage_ratio && !hasCoverageException) {
+    blockersValue.push(
+      `timeline beat text coverage too low: beat_text_chars=${audit.beat_text_char_count}, narration_chars=${audit.narration_char_count}, coverage=${audit.beat_text_coverage_ratio}`,
+    );
+    audit.passed = false;
+  }
+  if (audit.beat_text_coverage_ratio > 1.2) {
+    warningsValue.push(
+      `timeline beat text coverage is unusually high: beat_text_chars=${audit.beat_text_char_count}, narration_chars=${audit.narration_char_count}, coverage=${audit.beat_text_coverage_ratio}`,
+    );
+  }
+  if (pages.length < audit.min_page_count_from_narration && !hasDensityException) {
+    blockersValue.push(
+      `vertical page density too low: narration_chars=${audit.narration_char_count}, pages=${pages.length}, min_pages=${audit.min_page_count_from_narration} at <=${audit.max_effective_narration_chars_per_page} chars/page`,
+    );
+    audit.passed = false;
+  }
+
+  return audit;
+}
+
 async function validateWorkerBatches({ workerBatchesPath: batchesPath, pages, storyboard, blockers: blockersValue }) {
   let batchFiles = [];
   try {
@@ -480,6 +567,20 @@ function normalizeText(value) {
   return String(value ?? "").toLowerCase().replace(/\s+/g, "").trim();
 }
 
+function normalizeNarrationForDensity(value) {
+  return String(value ?? "")
+    .split(/\r?\n/u)
+    .filter((line) => !line.trim().startsWith("#"))
+    .join("")
+    .replace(/\s+/gu, "")
+    .trim();
+}
+
+function hasExceptionReason(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  return !isBlank(value.reason);
+}
+
 function isBlank(value) {
   if (Array.isArray(value)) return value.length === 0;
   if (value && typeof value === "object") return Object.keys(value).length === 0;
@@ -519,6 +620,15 @@ async function readJson(filePath) {
 async function readJsonIfExists(filePath) {
   try {
     return await readJson(filePath);
+  } catch (error) {
+    if (error?.code === "ENOENT") return null;
+    throw error;
+  }
+}
+
+async function readTextIfExists(filePath) {
+  try {
+    return await readFile(filePath, "utf8");
   } catch (error) {
     if (error?.code === "ENOENT") return null;
     throw error;

@@ -98,6 +98,52 @@ test("vertical page prompt validation accepts structured shot language and conti
   assert.match(result.stdout, /vertical page prompt audit passed/);
 });
 
+test("vertical page prompt validation rejects narration under-coverage and sparse page density", () => {
+  const { workdir, runFolder } = createVerticalPlanningFixture();
+  mkdirSync(path.join(runFolder, "01_script"), { recursive: true });
+  const longNarration = Array(20)
+    .fill("许澈在深夜公寓看着手机屏幕，蓝色情绪收据把他不愿面对的难过照亮。")
+    .join("");
+  writeFileSync(path.join(runFolder, "01_script/narration.md"), `# 测试口播\n\n${longNarration}\n`, "utf8");
+  writeJson(path.join(runFolder, "02_prompts/timeline_beats.json"), {
+    version: 1,
+    source: "01_script/narration.md",
+    mode: "short_vertical_video",
+    segmentation_policy: {
+      unit: "visual_beat",
+      target_chars: "20-50 Chinese chars, hard constraint",
+      hard_rule: "one beat maps to one 9:16 story page, one audio segment, and one timestamp row",
+    },
+    beats: Array.from({ length: 8 }, (_, index) => {
+      const order = index + 1;
+      const id = String(order).padStart(3, "0");
+      return {
+        beat_id: `beat_${id}`,
+        order,
+        page_id: `page_${id}`,
+        audio_segment_id: `seg_${id}`,
+        text: `许澈看向第 ${order} 张情绪收据。`,
+        estimated_start_sec: index * 4,
+        estimated_end_sec: index * 4 + 4,
+        scene_function: "情绪推进",
+        visual_prompt_brief: `第 ${order} 张情绪收据让房间变暗`,
+        key_entities: ["ent_xuche"],
+        key_assets: ["asset_emotion_receipt"],
+        segmentation_exception: null,
+      };
+    }),
+  });
+
+  const result = runValidator(verticalPromptValidator, workdir);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /timeline beat text coverage too low/);
+  assert.match(result.stderr, /vertical page density too low/);
+  const audit = readJson(path.join(runFolder, "02_prompts/vertical_page_prompt_audit.json"));
+  assert.equal(audit.passed, false);
+  assert.ok(audit.narration_coverage.beat_text_coverage_ratio < 0.9);
+  assert.ok(audit.narration_coverage.min_page_count_from_narration > audit.page_count);
+});
+
 test("vertical page prompt validation rejects missing prompt structure", () => {
   const { workdir, runFolder } = createVerticalPlanningFixture({
     mutatePrompts(prompts) {
