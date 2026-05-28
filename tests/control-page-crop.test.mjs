@@ -60,7 +60,7 @@ test("control-page crop uses tools splitter and removes the first residual candi
   const result = spawnSync(
     "node",
     [
-      path.join(repoRoot, ".codex/skills/comic-control-page-video/scripts/crop-control-page-panels.mjs"),
+      path.join(repoRoot, ".codex/skills/video-generation-template/scripts/crop-control-page-panels.mjs"),
       "project_output/control-page-runs/demo",
       "--project-root",
       workdir,
@@ -140,7 +140,7 @@ test("runtime input verification rejects non-splitter fallback crop manifests", 
   const result = spawnSync(
     "node",
     [
-      path.join(repoRoot, ".codex/skills/comic-control-page-video/scripts/verify-runtime-inputs.mjs"),
+      path.join(repoRoot, ".codex/skills/video-generation-template/scripts/verify-runtime-inputs.mjs"),
       "project_output/control-page-runs/demo",
       "--project-root",
       workdir,
@@ -202,7 +202,7 @@ test("control-page crop auto-tunes light gutter pages when defaults under-detect
   const result = spawnSync(
     "node",
     [
-      path.join(repoRoot, ".codex/skills/comic-control-page-video/scripts/crop-control-page-panels.mjs"),
+      path.join(repoRoot, ".codex/skills/video-generation-template/scripts/crop-control-page-panels.mjs"),
       "project_output/control-page-runs/demo",
       "--project-root",
       workdir,
@@ -271,7 +271,7 @@ test("control-page crop --no-auto-tune fails fast when the unified default split
   const result = spawnSync(
     "node",
     [
-      path.join(repoRoot, ".codex/skills/comic-control-page-video/scripts/crop-control-page-panels.mjs"),
+      path.join(repoRoot, ".codex/skills/video-generation-template/scripts/crop-control-page-panels.mjs"),
       "project_output/control-page-runs/demo",
       "--project-root",
       workdir,
@@ -337,7 +337,7 @@ test("control-page crop locates the real comic body below an overlong reference 
   const result = spawnSync(
     "node",
     [
-      path.join(repoRoot, ".codex/skills/comic-control-page-video/scripts/crop-control-page-panels.mjs"),
+      path.join(repoRoot, ".codex/skills/video-generation-template/scripts/crop-control-page-panels.mjs"),
       "project_output/control-page-runs/demo",
       "--project-root",
       workdir,
@@ -413,7 +413,7 @@ test("control-page crop writes auto-tune diagnostics without staging when no glo
   const result = spawnSync(
     "node",
     [
-      path.join(repoRoot, ".codex/skills/comic-control-page-video/scripts/crop-control-page-panels.mjs"),
+      path.join(repoRoot, ".codex/skills/video-generation-template/scripts/crop-control-page-panels.mjs"),
       "project_output/control-page-runs/demo",
       "--project-root",
       workdir,

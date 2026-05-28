@@ -1,0 +1,7 @@
+interface:
+  display_name: "9:16 竖屏视频模板"
+  short_description: "消费已验证的 00_brief 前期策划包，按 beat 对齐口播、导演统筹、9:16 图片、真实语音时间戳、字幕和视频"
+  default_prompt: "使用 $video-generation-template，先检查 00_brief/upstream_planning_audit.json.passed；如果缺失或未通过，先使用 $video-upstream-planner 生成并验证通用前期策划包。然后读取 video_strategy、event_scene_map、entity_registry、setting_registry、asset_registry 和 reference_selection_plan 生成口播审核包。口播通过后先生成 timeline_beats.json，再生成 director_visual_plan.json 统一控制分镜、运镜、灯光、场景总平面和 entity 动线；随后生成参考图包和 9:16 vertical_page_prompts，分派 subagent image_gen workers 分批生成 story_pages；图片阶段默认只跑机器 gate，不停人工审核；继续豆包语音、真实 forced alignment 时间戳、2.5D 竖屏视频和按语音 cue 保留停顿的字幕版视频。"
+
+policy:
+  allow_implicit_invocation: true

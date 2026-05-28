@@ -10,7 +10,7 @@ import { PNG } from "pngjs";
 const repoRoot = path.resolve(import.meta.dirname, "..");
 const validator = path.join(
   repoRoot,
-  ".codex/skills/comic-control-page-video/scripts/validate-control-page-images.mjs",
+  ".codex/skills/video-generation-template/scripts/validate-control-page-images.mjs",
 );
 
 test("control-page image validation rejects local PIL placeholder sources", () => {

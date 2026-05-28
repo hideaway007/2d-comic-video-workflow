@@ -1,7 +1,0 @@
-interface:
-  display_name: "9:16 单页漫画视频"
-  short_description: "消费已验证的 00_brief 前期策划包，按 beat 对齐口播、导演统筹、9:16 图片、真实语音时间戳、字幕和视频"
-  default_prompt: "使用 $comic-control-page-video，先检查 00_brief/upstream_planning_audit.json.passed；如果缺失或未通过，先使用 $comic-upstream-planner 生成并验证前期策划包。然后按题材路由到历史或中式克苏鲁 topic pack 生成口播审核包。口播通过后先生成 timeline_beats.json，再生成 director_visual_plan.json 统一控制分镜、运镜、灯光、场景总平面和人物动线；随后生成参考图包和 9:16 vertical_page_prompts，分派 6 个 subagent image_gen workers 分批生成 story_pages；图片阶段默认只跑机器 gate，不停人工审核；继续儒雅逸辰 2.0 / 1.25x 豆包语音、真实 forced alignment 时间戳、2.5D 漫画视频和按语音 cue 保留停顿的字幕版视频。"
-
-policy:
-  allow_implicit_invocation: true

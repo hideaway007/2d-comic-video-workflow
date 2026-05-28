@@ -1,6 +1,6 @@
 # 豆包语音 API 参考
 
-本 skill 的语音生成参考 `external/web-video-reference` 的当前项目规则和实现。
+本 skill 的语音生成以当前项目脚本和本参考文件记录的 provider 参数为准。
 
 ## 默认参数
 

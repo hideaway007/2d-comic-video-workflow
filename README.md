@@ -21,7 +21,7 @@ comic pages / storyboard beats
 - Converts AI-friendly planning output into deterministic `motion_plan.json` data.
 - Renders conservative 2.5D motion previews with Remotion.
 - Produces QA reports, review sheets, and FFprobe-backed video checks.
-- Includes a Codex skill under `.codex/skills/comic-control-page-video` for narration-first comic video production.
+- Includes Codex skills under `.codex/skills/video-upstream-planner` and `.codex/skills/video-generation-template` for generic narration-first 9:16 video production.
 
 ## Current Boundaries
 
@@ -111,7 +111,7 @@ project_output/
     review_sheet.md
 ```
 
-For 9:16 comic-video runs, the skill workflow uses:
+For 9:16 video runs, the skill workflow uses:
 
 ```text
 project_output/control-page-runs/<run-id>/
@@ -132,20 +132,22 @@ project_output/control-page-runs/<run-id>/
 
 ## Codex Skill
 
-The project-local skill is:
+The project-local skills are:
 
 ```text
-.codex/skills/comic-control-page-video/
+.codex/skills/video-upstream-planner/
+.codex/skills/video-generation-template/
 ```
 
-It defines a narration-first workflow for Chinese-history explainer videos and Chinese folk-horror / Cthulhu-style comic videos:
+They define a generic narration-first workflow for explainers, fiction shorts, product demos, documentary shorts, social ads, and custom visual videos:
 
-1. Write narration and review package.
-2. Build beat-first timeline.
-3. Create director visual plan.
-4. Create storyboard continuity plan.
-5. Generate 9:16 vertical page prompts and image worker batches.
-6. Gate image review before TTS and video rendering.
+1. Build and validate the `00_brief` upstream planning pack.
+2. Write narration and a review package.
+3. Build a beat-first timeline.
+4. Create a director visual plan.
+5. Create storyboard continuity plan.
+6. Generate 9:16 vertical page prompts and image worker batches.
+7. Gate image review before TTS and video rendering.
 
 ## Optional TTS
 

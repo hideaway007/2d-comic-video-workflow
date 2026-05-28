@@ -8,15 +8,15 @@ import test from "node:test";
 const repoRoot = path.resolve(import.meta.dirname, "..");
 const timelineValidator = path.join(
   repoRoot,
-  ".codex/skills/comic-control-page-video/scripts/validate-timeline-beats.mjs",
+  ".codex/skills/video-generation-template/scripts/validate-timeline-beats.mjs",
 );
 const promptValidator = path.join(
   repoRoot,
-  ".codex/skills/comic-control-page-video/scripts/validate-control-page-prompts.mjs",
+  ".codex/skills/video-generation-template/scripts/validate-control-page-prompts.mjs",
 );
 const verticalPromptValidator = path.join(
   repoRoot,
-  ".codex/skills/comic-control-page-video/scripts/validate-vertical-page-prompts.mjs",
+  ".codex/skills/video-generation-template/scripts/validate-vertical-page-prompts.mjs",
 );
 
 test("timeline validation accepts one-to-one beat, audio, timestamp, and prompt panel mapping", () => {
@@ -347,10 +347,10 @@ function createPlanningFixture({ mutateTimeline, mutatePrompts } = {}) {
   const prompts = {
     version: 1,
     project: {
-      project_name: "井皮",
-      genre: "中式克苏鲁怪谈",
-      visual_style: "干净中式恐怖漫画",
-      world_setting: "槐湾村祠堂与古井",
+      project_name: "夜班咖啡馆",
+      genre: "通用竖屏短片",
+      visual_style: "干净电影感竖屏插画",
+      world_setting: "深夜咖啡馆、玻璃门与街角长椅",
     },
     pages: [
       {
@@ -533,7 +533,7 @@ function createVerticalPlanningFixture({ mutatePrompts, mutateDirector, mutateSt
           `镜头改变理由：${storyboard.frames[index].camera_change_reason}。`,
           `镜头语言：景别 ${shotScale}，视角 ${directive.camera_angle}，静帧运镜 ${directive.camera_motion}。`,
           "前景 foreground 是湿冷井栏和红绣鞋，中景 midground 是陆玉娘和沈砚的视线，背景 background 是村民和祠堂门廊。",
-          "人物站位清楚，道具位置清楚，光线为阴天冷灰和井底冷青光，先镜头调度后中式民俗恐怖美术。",
+          "人物站位清楚，道具位置清楚，光线为室内暖光和窗外冷蓝街灯，先镜头调度后统一视觉风格。",
         ].join("\n"),
       };
     }),

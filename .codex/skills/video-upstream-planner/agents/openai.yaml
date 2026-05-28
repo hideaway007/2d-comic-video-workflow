@@ -1,0 +1,7 @@
+interface:
+  display_name: "视频前期策划"
+  short_description: "把 idea、资料、剧本或 brief 整理成通用 00_brief 前期策划包，包含事件场景拆解、entity/setting/asset registry 和参考图选择策略"
+  default_prompt: "使用 $video-upstream-planner，先按 idea/source/script/brief 判断输入模式，生成 00_brief/video_strategy.json、event_scene_map.json、entity_registry.json、setting_registry.json、asset_registry.json、reference_selection_plan.json 和 adaptation_plan.md；运行 validate:upstream-plan，确认 upstream_planning_audit.json.passed 为 true；通过后再交给 $video-generation-template 继续口播、图片、语音和视频生产。"
+
+policy:
+  allow_implicit_invocation: true

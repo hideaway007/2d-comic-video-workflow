@@ -37,7 +37,7 @@ test("Doubao dry-run uses one complete narration request by default", () => {
   const result = spawnSync(
     "node",
     [
-      path.join(repoRoot, ".codex/skills/comic-control-page-video/scripts/synthesize-doubao-voice.mjs"),
+      path.join(repoRoot, ".codex/skills/video-generation-template/scripts/synthesize-doubao-voice.mjs"),
       "project_output/control-page-runs/demo",
       "--project-root",
       workdir,
@@ -84,7 +84,7 @@ test("Doubao dry-run can explicitly use segmented requests", () => {
   const result = spawnSync(
     "node",
     [
-      path.join(repoRoot, ".codex/skills/comic-control-page-video/scripts/synthesize-doubao-voice.mjs"),
+      path.join(repoRoot, ".codex/skills/video-generation-template/scripts/synthesize-doubao-voice.mjs"),
       "project_output/control-page-runs/demo",
       "--project-root",
       workdir,
@@ -143,7 +143,7 @@ test("Doubao synthesis refuses to run before 9:16 image review approval", () => 
   const result = spawnSync(
     "node",
     [
-      path.join(repoRoot, ".codex/skills/comic-control-page-video/scripts/synthesize-doubao-voice.mjs"),
+      path.join(repoRoot, ".codex/skills/video-generation-template/scripts/synthesize-doubao-voice.mjs"),
       "project_output/control-page-runs/demo",
       "--project-root",
       workdir,
@@ -195,7 +195,7 @@ test("Doubao synthesis passes the 9:16 image gate after approval", () => {
   const result = spawnSync(
     "node",
     [
-      path.join(repoRoot, ".codex/skills/comic-control-page-video/scripts/synthesize-doubao-voice.mjs"),
+      path.join(repoRoot, ".codex/skills/video-generation-template/scripts/synthesize-doubao-voice.mjs"),
       "project_output/control-page-runs/demo",
       "--project-root",
       workdir,
@@ -242,7 +242,7 @@ test("Doubao synthesis rejects invalid approved 9:16 image manifests", () => {
   const result = spawnSync(
     "node",
     [
-      path.join(repoRoot, ".codex/skills/comic-control-page-video/scripts/synthesize-doubao-voice.mjs"),
+      path.join(repoRoot, ".codex/skills/video-generation-template/scripts/synthesize-doubao-voice.mjs"),
       "project_output/control-page-runs/demo",
       "--project-root",
       workdir,
@@ -286,7 +286,7 @@ test("Doubao synthesis audits approved 9:16 image files before TTS", () => {
   const result = spawnSync(
     "node",
     [
-      path.join(repoRoot, ".codex/skills/comic-control-page-video/scripts/synthesize-doubao-voice.mjs"),
+      path.join(repoRoot, ".codex/skills/video-generation-template/scripts/synthesize-doubao-voice.mjs"),
       "project_output/control-page-runs/demo",
       "--project-root",
       workdir,
@@ -321,7 +321,7 @@ test("Doubao synthesis does not accept legacy crop review unless explicitly requ
   const result = spawnSync(
     "node",
     [
-      path.join(repoRoot, ".codex/skills/comic-control-page-video/scripts/synthesize-doubao-voice.mjs"),
+      path.join(repoRoot, ".codex/skills/video-generation-template/scripts/synthesize-doubao-voice.mjs"),
       "project_output/control-page-runs/demo",
       "--project-root",
       workdir,
@@ -353,7 +353,7 @@ test("Doubao synthesis refuses to run before legacy crop review approval", () =>
   const result = spawnSync(
     "node",
     [
-      path.join(repoRoot, ".codex/skills/comic-control-page-video/scripts/synthesize-doubao-voice.mjs"),
+      path.join(repoRoot, ".codex/skills/video-generation-template/scripts/synthesize-doubao-voice.mjs"),
       "project_output/control-page-runs/demo",
       "--project-root",
       workdir,
@@ -367,7 +367,7 @@ test("Doubao synthesis refuses to run before legacy crop review approval", () =>
 
 test("Doubao script keeps duration probe helper callable after each segment", () => {
   const source = readFileSync(
-    path.join(repoRoot, ".codex/skills/comic-control-page-video/scripts/synthesize-doubao-voice.mjs"),
+    path.join(repoRoot, ".codex/skills/video-generation-template/scripts/synthesize-doubao-voice.mjs"),
     "utf8",
   );
 
